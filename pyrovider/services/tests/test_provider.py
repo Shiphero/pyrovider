@@ -19,11 +19,11 @@ class ModelSchemataTest(unittest.TestCase):
     def setUp(self):
         # Given...
         self.provider = ServiceProvider()
-        with open(self.service_conf_path, 'r') as fp:
-            self.service_conf = yaml.load(fp.read())
-        with open(self.app_conf_path, 'r') as fp:
-            self.app_conf = yaml.load(fp.read())
-        self.provider.conf(self.service_conf, self.app_conf)
+        with open(self._local.service_conf_path, 'r') as fp:
+            self._local.service_conf = yaml.load(fp.read())
+        with open(self._local.app_conf_path, 'r') as fp:
+            self._local.app_conf = yaml.load(fp.read())
+        self.provider.conf(self._local.service_conf, self._local.app_conf)
 
     def test_getting_an_instance_service(self):
         # When...
@@ -131,7 +131,7 @@ class ModelSchemataTest(unittest.TestCase):
     def test_getting_a_service_with_broken_dependencies(self):
         # When...
         self.provider = ServiceProvider()
-        self.provider.conf(self.service_conf)
+        self.provider.conf(self._local.service_conf)
         with self.assertRaises(BadConfPathError) as context:
             self.provider.get('service-b')
         # Then...
