@@ -80,6 +80,7 @@ class ServiceProvider():
     def __del__(self):
         self.reset()        
 
+
     def conf(self, service_conf, app_conf=None):
         if app_conf is None:
             app_conf = {}
@@ -182,7 +183,7 @@ class ServiceProvider():
         parts = path.split('.')
 
         try:
-            trunk = self._local.app_conf[parts[0]]
+            trunk = self.app_conf[parts[0]]
         except KeyError as e:
             raise BadConfPathError(self.BAD_CONF_PATH_ERRMSG.format(parts[0]))
 
