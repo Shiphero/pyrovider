@@ -3,6 +3,7 @@ import os
 from dotenv import find_dotenv, load_dotenv
 from pyrovider.meta.ioc import Importer
 from pyrovider.tools.dicttools import dictpath
+from werkzeug import Local, release_local
 
 # Loads env vars from .env file
 load_dotenv(find_dotenv())
@@ -59,20 +60,26 @@ class ServiceProvider():
                       'class': '_instance_service_with_class',
                       'factory': '_instance_service_with_factory'}
 
+    _local = Local()
+
     def __init__(self):
         self.importer = Importer()  # Can't inject it, obviously.
         self.service_conf = {}
         self.app_conf = {}
-        self.set_services = {}
-        self.service_instances = {}
-        self.service_classes = {}
-        self.factory_classes = {}
+
+    def _init_local(self):
+        if not hasattr(self._local, 'set_services'):
+            self._local.set_services = {}
+            self._local.service_instances = {}
+            self._local.service_classes = {}
+            self._local.factory_classes = {}
 
     def reset(self):
-        self.set_services = {}
-        self.service_instances = {}
-        self.service_classes = {}
-        self.factory_classes = {}
+        release_local(self._local)
+
+    def __del__(self):
+        self.reset()        
+
 
     def conf(self, service_conf, app_conf=None):
         if app_conf is None:
@@ -82,14 +89,16 @@ class ServiceProvider():
         self.app_conf = app_conf
 
     def get(self, name, **kwargs):
+        self._init_local()
+
         if name not in self.service_conf:
             raise UnknownServiceError(self.UNKNOWN_SERVICE_ERRMSG.format(name))
 
         return self._get_set_service(name) or self._get_built_service(name, **kwargs)
 
     def _get_set_service(self, name):
-        if name in self.set_services:
-            return self.set_services[name]
+        if name in self._local.set_services:
+            return self._local.set_services[name]
 
     def _get_built_service(self, name, **kwargs):
         if self.service_conf[name] and self._has_multiple_creation_methods(name):
@@ -102,10 +111,12 @@ class ServiceProvider():
             raise NoCreationMethodError(self.NO_CREATION_METHOD_ERRMSG.format(name))
 
     def set(self, name, service):
+        self._init_local()
+
         if name not in self.service_conf:
             raise UnknownServiceError(self.UNKNOWN_SERVICE_ERRMSG.format(name))
 
-        self.set_services[name] = service
+        self._local.set_services[name] = service
 
     def _has_multiple_creation_methods(self, name):
         if not self.service_conf[name]:
@@ -114,27 +125,27 @@ class ServiceProvider():
         return 1 < len([k for k in self._service_meths.keys() if k in self.service_conf[name]])
 
     def _get_service_instance(self, name):
-        if name not in self.service_instances:
-            self.service_instances[name] = self.importer.get_obj(self.service_conf[name]['instance'])
+        if name not in self._local.service_instances:
+            self._local.service_instances[name] = self.importer.get_obj(self.service_conf[name]['instance'])
 
-        return self.service_instances[name]
+        return self._local.service_instances[name]
 
     def _instance_service_with_class(self, name, **kwargs):
-        if name not in self.service_classes:
-            self.service_classes[name] = self.importer.get_obj(self.service_conf[name]['class'])
+        if name not in self._local.service_classes:
+            self._local.service_classes[name] = self.importer.get_obj(self.service_conf[name]['class'])
 
-        return self.service_classes[name](*self._get_args(name), **self._get_kwargs(name, **kwargs))
+        return self._local.service_classes[name](*self._get_args(name), **self._get_kwargs(name, **kwargs))
 
     def _instance_service_with_factory(self, name, **kwargs):
-        if name not in self.factory_classes:
+        if name not in self._local.factory_classes:
             factory_class = self.importer.get_obj(self.service_conf[name]['factory'])
 
             if not hasattr(factory_class, 'build') or not callable(factory_class.build):
                 raise NotAServiceFactoryError(self.NOT_A_SERVICE_FACTORY_ERRMSG.format(name))
 
-            self.factory_classes[name] = factory_class
+            self._local.factory_classes[name] = factory_class
 
-        return self.factory_classes[name](*self._get_args(name), **self._get_kwargs(name, **kwargs)).build()
+        return self._local.factory_classes[name](*self._get_args(name), **self._get_kwargs(name, **kwargs)).build()
 
     def _get_args(self, name):
         if 'arguments' in self.service_conf[name]:
