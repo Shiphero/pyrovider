@@ -133,7 +133,6 @@ class ServiceProvider:
         'factory': '_instance_service_with_factory'
     }
 
-    _local = Local()
 
     def __init__(self, *providers, name: str = None):
         self.name = name
@@ -146,6 +145,7 @@ class ServiceProvider:
         self.factory_classes = {}
         self._namespaces = {}
         self._service_names = []
+        self._local = Local()
 
     def _init_local(self):
         if not hasattr(self._local, 'set_services'):
