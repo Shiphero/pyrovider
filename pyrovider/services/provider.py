@@ -1,5 +1,6 @@
 import os
 
+from ast import literal_eval
 from typing import List, Dict, Tuple
 from collections import defaultdict
 
@@ -332,5 +333,12 @@ class ServiceProvider:
 
     def _get_env(self, var: str, default: any = None):
         default = self._get_arg(default)
+        string = os.environ.get(var, default)
 
-        return os.environ.get(var, default)
+        try:
+            if string:
+                return literal_eval(string)
+        except SyntaxError:
+            pass
+
+        return string

@@ -1,3 +1,4 @@
+import os
 import unittest
 import yaml
 
@@ -67,6 +68,20 @@ class ModelSchemataTest(unittest.TestCase):
         service_b = self.provider.get('service-b')
         # Then...
         self.assertEqual('Some default value.', service_b.some_env_var)
+
+    def test_getting_a_service_with_an_env_var_dependency_with_an_integer(self):
+        # When...
+        os.environ['INT_ENV_VAR'] = '1'
+        service_b = self.provider.get('service-b')
+        # Then...
+        self.assertEqual(1, service_b.some_integer)
+
+    def test_getting_a_service_with_an_env_var_dependency_with_a_boolean(self):
+        # When...
+        os.environ['BOOL_ENV_VAR'] = 'False'
+        service_b = self.provider.get('service-b')
+        # Then...
+        self.assertEqual(False, service_b.some_boolean)
 
     def test_getting_a_service_with_an_env_var_dependency_with_a_config_default(self):
         # When...
@@ -176,12 +191,16 @@ class MockServiceB():
                  some_env_var,
                  other_env_var,
                  some_literal_value,
+                 some_integer,
+                 some_boolean,
                  password):
         self.service_a = service_a
         self.some_configuration = some_configuration
         self.some_env_var = some_env_var
         self.other_env_var = other_env_var
         self.some_literal_value = some_literal_value
+        self.some_integer = some_integer
+        self.some_boolean = some_boolean
         self.password = password
 
 

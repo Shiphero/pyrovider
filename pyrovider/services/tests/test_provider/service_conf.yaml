@@ -9,6 +9,8 @@ service-b:
     - [$SOME_ENV_VAR, 'Some default value.']
     - [$OTHER_ENV_VAR, '%some_app.api.url%']
     - 'A literal value.'
+    - $INT_ENV_VAR
+    - $BOOL_ENV_VAR
   named_arguments:
     password: 'default'
 
