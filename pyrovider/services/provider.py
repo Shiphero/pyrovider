@@ -338,7 +338,7 @@ class ServiceProvider:
         try:
             if string:
                 return literal_eval(string)
-        except SyntaxError:
+        except Exception:
             pass
 
         return string
