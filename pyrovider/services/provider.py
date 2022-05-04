@@ -134,7 +134,6 @@ class ServiceSelector:
      - **kwargs: a map of options to services. 
     
     The selector will return a option for a given key. If that option was defined in the kwargs, that service will be used. If there's no match, the default is returned.
-
     Possible usages:
      _- instantiating services based on feature flags (the key is the flag, the callable returns the flag's value depending on context)
       - instantiating services based on env vars
@@ -160,10 +159,10 @@ class ServiceSelector:
 
             if not kwargs.get("on"):
                 raise MissingParameter(f"Selector service {self.name} is a bool selector and requires a value for the 'on' parameter")
-    
+
     def __call__(self, *args, **kwargs: Any) -> Any:
         option = self.selector(self.key)
-        
+
         if self.is_bool:
             option = "on" if option is True else "off"
 
@@ -347,15 +346,19 @@ class ServiceProvider:
 
     def _instance_service_with_selector(self, name: str, **kwargs):
         if name not in self._local.factory_classes:
-            selector_callable = self.importer.get_obj(self.service_conf[name]['selector'])
+            selector_ref = self.service_conf[name]['selector']
+
+            if selector_ref.startswith("@"):
+                selector_callable = self.get(selector_ref[1:])
+            else:
+                selector_callable = self.importer.get_obj(selector_ref)
 
             if not callable(selector_callable):
                 raise NotACallableSelectorError(self.NOT_A_CALLABLE_SELECTOR_ERRMSG.format(name))
 
             self._local.selectors[name] = ServiceSelector(name, selector_callable, **self._get_kwargs(name, **kwargs))
 
-        service_name = self._local.selectors[name]()
-        return self.get(service_name)
+        return self._local.selectors[name]()
 
     def _get_args(self, name: str):
         if 'arguments' in self.service_conf[name]:

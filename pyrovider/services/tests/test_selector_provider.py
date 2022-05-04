@@ -57,8 +57,8 @@ from pyrovider.services.provider import ServiceProvider, MissingParameter, Servi
 )
 def test_get_service(selector, is_bool, default, key, options, expected_service):
     selector_service = ServiceSelector("test", selector=selector, key=key, default=default, is_bool=is_bool, **options)
-    service_name = selector_service()
-    assert service_name == expected_service
+    service = selector_service()
+    assert service == expected_service
 
 
 @pytest.mark.parametrize(
@@ -120,17 +120,46 @@ def test_bad_config(selector, is_bool, default, key, options, expected_error):
                     "named_arguments": {
                         "default": "test.version-1",
                         "key": "v1",
-                        "v1": "test.version-1",
-                        "v2": "test.version-2",
-                        "v3": "test.version-3",
+                        "v1": "@test.version-1",
+                        "v2": "@test.version-2",
+                        "v3": "@test.version-3",
                     }
                 }
             },
             "test.version-1",
         ),
+        (
+            {
+                "test.version-1": {
+                    "class": "pyrovider.services.tests.mocks.ServiceA"
+                },
+                "test.version-2": {
+                    "class": "pyrovider.services.tests.mocks.ServiceB"
+                },
+                "test.version-3": {
+                    "class": "pyrovider.services.tests.mocks.ServiceC"
+                },
+                "selector": {
+                    "instance": "pyrovider.services.tests.mocks.selector"
+                },
+                "test": {
+                    "selector": "@selector",
+                    "named_arguments": {
+                        "default": "test.version-1",
+                        "key": "v1",
+                        "v1": "@test.version-1",
+                        "v2": "@test.version-2",
+                        "v3": "@test.version-3",
+                    }
+                }
+            },
+            "test.version-1",
+        ),
+
     ],
+    ids=["selector-as-function-reference", "selector-as-service-reference"]
 )
-def test_getting_available_namespaces(conf: dict, expected_service):
+def test_defining_a_selector_service(conf: dict, expected_service):
     provider = ServiceProvider()
     provider.conf(conf)
 
