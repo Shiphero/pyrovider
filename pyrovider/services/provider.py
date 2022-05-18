@@ -324,7 +324,7 @@ class ServiceProvider:
         
         except Exception as e:
             # See if we are trying to access a service's attribute
-            service_name, service_attr = service_name.rsplit(".")
+            service_name, service_attr = service_name.rsplit(".", 1)
             if not service_attr:
                 raise
 
@@ -332,7 +332,7 @@ class ServiceProvider:
             value = getattr(service, service_attr)
 
         return value
-        
+
     def _get_conf(self, path: str):
         parts = path.split('.')
 
