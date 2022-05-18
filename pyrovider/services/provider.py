@@ -302,7 +302,7 @@ class ServiceProvider:
     def _get_arg(self, ref: any):
         if isinstance(ref, str):
             if '@' == ref[0]:
-                return self.get(ref[1:])
+                return self._get_service(ref[1:])
             elif '%' == ref[0] == ref[-1:]:
                 return self._get_conf(ref[1:-1])
             elif '$' == ref[0]:
@@ -318,6 +318,21 @@ class ServiceProvider:
 
         return ref # Literal
 
+    def _get_service(self, service_name: str):
+        try:
+            value = self.get(service_name)
+        
+        except Exception as e:
+            # See if we are trying to access a service's attribute
+            service_name, service_attr = service_name.rsplit(".")
+            if not service_attr:
+                raise
+
+            service = self.get(service_name)
+            value = getattr(service, service_attr)
+
+        return value
+        
     def _get_conf(self, path: str):
         parts = path.split('.')
 

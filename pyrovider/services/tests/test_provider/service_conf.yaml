@@ -41,3 +41,21 @@ service-i:
   arguments:
     - ['@service-a', '@service-b']
     - ['@service-c', '@service-h']
+
+service-j:
+  class: pyrovider.services.tests.test_provider.MockServiceB
+  arguments:
+    - '@service-a'
+    - '%some_app.api%'
+    - [$SOME_ENV_VAR, 'Some default value.']
+    - [$OTHER_ENV_VAR, '%some_app.api.url%']
+    - 'A literal value.'
+    - $INT_ENV_VAR
+    - $BOOL_ENV_VAR
+  named_arguments:
+    password: '@service-a.field_1'
+
+service-k:
+  class: pyrovider.services.tests.test_provider.MockServiceB
+  named_arguments:
+    password: '@service-h.field_1'
