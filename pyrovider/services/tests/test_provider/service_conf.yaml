@@ -55,7 +55,10 @@ service-j:
   named_arguments:
     password: '@service-a.field_1'
 
+service.other.thing:
+  instance: pyrovider.services.tests.test_provider.mock_service_instance
+
 service-k:
   class: pyrovider.services.tests.test_provider.MockServiceB
   named_arguments:
-    password: '@service-h.field_1'
+    password: '@service.other.thing.field_1'

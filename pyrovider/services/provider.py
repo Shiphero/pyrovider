@@ -322,7 +322,7 @@ class ServiceProvider:
         try:
             value = self.get(service_name)
         
-        except Exception as e:
+        except UnknownServiceError as e:
             # See if we are trying to access a service's attribute
             service_name, service_attr = service_name.rsplit(".", 1)
             if not service_attr:
