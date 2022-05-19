@@ -2,8 +2,6 @@ import os
 import unittest
 import yaml
 
-from typing import Any
-
 from unittest import mock
 from pyrovider.meta.construction import Singleton
 from pyrovider.services.provider import (BadConfPathError,
