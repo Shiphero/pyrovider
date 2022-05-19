@@ -117,6 +117,15 @@ class ModelSchemataTest(unittest.TestCase):
         # Then...
         self.assertEqual(service_c.service_a, service_a)
 
+    def test_getting_a_service_with_arguments_resolved_by_calling_another_service(self):
+        service_a = self.provider.get('service-a')
+        service_j = self.provider.get('service-j')
+        assert service_j.password == service_a.field_1
+
+        # Accessing an invalid service attribute will fail
+        with self.assertRaises(AttributeError):
+            service_k = self.provider.get('service-k')
+
     def test_getting_unknown_service(self):
         with self.assertRaises(UnknownServiceError) as context:
             self.provider.get('service-unknown')
@@ -180,7 +189,8 @@ class ModelSchemataTest(unittest.TestCase):
 
 class MockServiceA():
 
-    pass
+    def __init__(self):
+        self.field_1 = "test"
 
 
 class MockServiceB():
@@ -241,6 +251,8 @@ class MockServiceFactoryWithoutBuild(ServiceFactory):
 
 def mock_service_instance():
     pass
+
+
 
 
 if __name__ == '__main__':
