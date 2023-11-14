@@ -1,4 +1,0 @@
-invoke==1.3.0
-pyyaml==5.1.2
-python-dotenv==0.10.3  # Docker/Python Parameters
-werkzeug==0.10.4
