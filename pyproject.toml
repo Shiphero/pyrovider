@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyrovider"
+description = "A service provider for Python inspired by Symfony 2 and Angular 2"
+authors = [
+    { name = "Javier Lorenzana", email = "skqr@protonmail.com" },
+    { name = "Sebastián Packmann", email = "seba@shiphero.com" }
+]
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+]
+keywords = ["service", "provider", "python"]
+dependencies = ["pyyaml", "python-dotenv"]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pyrovider.__version__"}
+
+[project.urls]
+Homepage = "https://github.com/shiphero/serviceprovider"
+
+[project.optional-dependencies]
+dev = ["check-manifest"]
+test = ["coverage"]
