@@ -1,8 +1,9 @@
 import os
 
 from ast import literal_eval
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Callable, Any
 from collections import defaultdict
+from click import MissingParameter
 
 from dotenv import find_dotenv, load_dotenv
 from pyrovider.meta.ioc import Importer
@@ -42,6 +43,10 @@ class NotAServiceFactoryError(ServiceProviderError):
     pass
 
 
+class NotACallableSelectorError(ServiceProviderError):
+    pass
+
+
 class BadConfPathError(ServiceProviderError):
 
     pass
@@ -66,6 +71,7 @@ def get_services_and_namespaces(services_names: List[str], provider, parent_name
             namespace_map[namespace].append(service_name)
         else:
             services.append(key)
+
     for namespace, namespace_service_names in namespace_map.items():
         namespaces[namespace] = Namespace(
             namespace, namespace_service_names, provider, parent=parent_namespace
@@ -115,6 +121,55 @@ class Namespace:
         return self._service_names
 
 
+
+class ServiceSelector:
+
+    """
+    The ServiceSelector returns a service name based on the outcome of calling the selector with a given key. The selector callable should return an option str/bool which is expected to be mapped to a service
+    
+    The service is configured by specifying
+     - default: a default service
+     - key: used by the selector to return an option
+     - is_bool: Whether it is a bool locator or not. Bool locators dont have multiple options, just on/off (True/False)
+     - **kwargs: a map of options to services. 
+    
+    The selector will return a option for a given key. If that option was defined in the kwargs, that service will be used. If there's no match, the default is returned.
+    Possible usages:
+     _- instantiating services based on feature flags (the key is the flag, the callable returns the flag's value depending on context)
+      - instantiating services based on env vars
+      - instantiating services based on a condition encapsulated in a callable
+    """
+
+    def __init__(self, name: str, selector: Callable, key: str, default: str, is_bool: bool = False, **kwargs: Any):
+        self.name = name
+        self.selector = selector
+        self.key = key
+        self.default = default
+        self.options = dict(kwargs)
+        self.is_bool = is_bool
+
+        if not default:
+            raise MissingParameter(f"Selector service {self.name} requires a default service")
+
+        if not kwargs:
+            raise MissingParameter(f"Selector service {self.name} requires a service options to be defined")
+
+        if is_bool:
+            self.options["off"] = kwargs.get("off") or default
+
+            if not kwargs.get("on"):
+                raise MissingParameter(f"Selector service {self.name} is a bool selector and requires a value for the 'on' parameter")
+
+    def __call__(self, *args, **kwargs: Any) -> Any:
+        option = self.selector(self.key)
+
+        if self.is_bool:
+            option = "on" if option is True else "off"
+
+        service = self.options.get(option) or self.default
+        return service
+
+        
 class ServiceProvider:
 
     name = None
@@ -126,12 +181,14 @@ class ServiceProvider:
                                 'a factory for the service "{}", none was found.'
     NOT_A_SERVICE_FACTORY_ERRMSG = 'The factory class for the service ' \
                                    '"{}" does not have a "build" method.'
+    NOT_A_CALLABLE_SELECTOR_ERRMSG = 'The selector provider "{}" requires a callable selector'
     BAD_CONF_PATH_ERRMSG = 'The path "{}" was not found in the app configuration.'
 
     _service_meths = {
         'instance': '_get_service_instance',
         'class': '_instance_service_with_class',
-        'factory': '_instance_service_with_factory'
+        'factory': '_instance_service_with_factory',
+        'selector': '_instance_service_with_selector',
     }
 
 
@@ -144,6 +201,7 @@ class ServiceProvider:
         self.service_instances = {}
         self.service_classes = {}
         self.factory_classes = {}
+        self.selectors = {}
         self._namespaces = {}
         self._service_names = []
         self._local = Local()
@@ -154,6 +212,7 @@ class ServiceProvider:
             self._local.service_instances = {}
             self._local.service_classes = {}
             self._local.factory_classes = {}
+            self._local.selectors = {}
 
     def reset(self):
         release_local(self._local)
@@ -284,6 +343,22 @@ class ServiceProvider:
             self._local.factory_classes[name] = factory_class
 
         return self._local.factory_classes[name](*self._get_args(name), **self._get_kwargs(name, **kwargs)).build()
+
+    def _instance_service_with_selector(self, name: str, **kwargs):
+        if name not in self._local.factory_classes:
+            selector_ref = self.service_conf[name]['selector']
+
+            if selector_ref.startswith("@"):
+                selector_callable = self.get(selector_ref[1:])
+            else:
+                selector_callable = self.importer.get_obj(selector_ref)
+
+            if not callable(selector_callable):
+                raise NotACallableSelectorError(self.NOT_A_CALLABLE_SELECTOR_ERRMSG.format(name))
+
+            self._local.selectors[name] = ServiceSelector(name, selector_callable, **self._get_kwargs(name, **kwargs))
+
+        return self._local.selectors[name]()
 
     def _get_args(self, name: str):
         if 'arguments' in self.service_conf[name]:
