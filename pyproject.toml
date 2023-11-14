@@ -25,7 +25,7 @@ dynamic = ["version"]
 version = {attr = "pyrovider.__version__"}
 
 [project.urls]
-Homepage = "https://github.com/shiphero/serviceprovider"
+Homepage = "https://github.com/shiphero/pyrovider"
 
 [project.optional-dependencies]
 dev = ["check-manifest"]
