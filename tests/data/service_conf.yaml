@@ -1,8 +1,8 @@
 service-a:
-  class: pyrovider.services.tests.test_provider.MockServiceA
+  class: tests.test_provider.MockServiceA
 
 service-b:
-  class: pyrovider.services.tests.test_provider.MockServiceB
+  class: tests.test_provider.MockServiceB
   arguments:
     - '@service-a'
     - '%some_app.api%'
@@ -15,7 +15,7 @@ service-b:
     password: 'default'
 
 service-c:
-  factory: pyrovider.services.tests.test_provider.MockServiceFactory
+  factory: tests.test_provider.MockServiceFactory
   arguments:
     - '@service-b'
   named_arguments:
@@ -24,26 +24,26 @@ service-c:
 service-d:
 
 service-e:
-  class: pyrovider.services.tests.test_provider.MockServiceA
-  factory: pyrovider.services.tests.test_provider.MockServiceFactory
+  class: tests.test_provider.MockServiceA
+  factory: tests.test_provider.MockServiceFactory
 
 service-f:
-  factory: pyrovider.services.tests.test_provider.MockServiceA
+  factory: tests.test_provider.MockServiceA
 
 service-g:
-  factory: pyrovider.services.tests.test_provider.MockServiceFactoryWithoutBuild
+  factory: tests.test_provider.MockServiceFactoryWithoutBuild
 
 service-h:
-  instance: pyrovider.services.tests.test_provider.mock_service_instance
+  instance: tests.test_provider.mock_service_instance
 
 service-i:
-  class: pyrovider.services.tests.test_provider.MockServiceI
+  class: tests.test_provider.MockServiceI
   arguments:
     - ['@service-a', '@service-b']
     - ['@service-c', '@service-h']
 
 service-j:
-  class: pyrovider.services.tests.test_provider.MockServiceB
+  class: tests.test_provider.MockServiceB
   arguments:
     - '@service-a'
     - '%some_app.api%'
@@ -56,9 +56,9 @@ service-j:
     password: '@service-a.field_1'
 
 service.other.thing:
-  instance: pyrovider.services.tests.test_provider.mock_service_instance
+  instance: tests.test_provider.mock_service_instance
 
 service-k:
-  class: pyrovider.services.tests.test_provider.MockServiceB
+  class: tests.test_provider.MockServiceB
   named_arguments:
     password: '@service.other.thing.field_1'
