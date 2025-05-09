@@ -4,13 +4,13 @@ from pyrovider.meta.construction import Singleton
 
 
 class SingletonTest(unittest.TestCase):
-
     maxDiff = None
 
     def test_instancing_a_singleton_class(self):
         # Given...
         class TestSingleton(metaclass=Singleton):
             pass
+
         # When...
         singleton_a = TestSingleton()
         singleton_b = TestSingleton()
@@ -24,6 +24,7 @@ class SingletonTest(unittest.TestCase):
 
         class TestSingletonChild(TestSingletonParent):
             pass
+
         # When...
         singleton_a = TestSingletonChild()
         singleton_b = TestSingletonChild()

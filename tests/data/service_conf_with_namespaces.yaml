@@ -1,0 +1,16 @@
+service1:
+  class: tests.test_provider.MockServiceA
+
+foo.service2:
+  class: tests.test_provider.MockServiceI
+  arguments:
+    - '@service1'
+    - '@service1'
+
+foo.service3:
+  class: tests.test_provider.MockServiceA
+
+foo.bar.service4:
+  class: tests.test_provider.MockServiceA
+
+

@@ -1,59 +1,52 @@
 import os
-
+import typing
 from ast import literal_eval
-from typing import List, Dict, Tuple
 from collections import defaultdict
 
 from dotenv import find_dotenv, load_dotenv
+
 from pyrovider.meta.ioc import Importer
 from pyrovider.tools.dicttools import dictpath
 
 try:
-    from werkzeug import Local, release_local
-except:
     from werkzeug.local import Local, release_local
+except ImportError:
+    from werkzeug import Local, release_local  # type: ignore[attr-defined,no-redef]
 
 # Loads env vars from .env file
 load_dotenv(find_dotenv())
 
 
 class ServiceProviderError(Exception):
-
     pass
 
 
 class UnknownServiceError(ServiceProviderError):
-
     pass
 
 
 class TooManyCreationMethodsError(ServiceProviderError):
-
     pass
 
 
 class NoCreationMethodError(ServiceProviderError):
-
     pass
 
 
 class NotAServiceFactoryError(ServiceProviderError):
-
     pass
 
 
 class BadConfPathError(ServiceProviderError):
-
     pass
 
 
-class ServiceFactory():
-
+class ServiceFactory:
     def build(self):
         raise NotImplementedError()
 
 
-def get_services_and_namespaces(services_names: List[str], provider, parent_namespace=None):
+def get_services_and_namespaces(services_names: typing.Iterable[str], provider, parent_namespace=None):
     services = []
     namespaces = {}
     namespace_map = defaultdict(list)
@@ -67,23 +60,18 @@ def get_services_and_namespaces(services_names: List[str], provider, parent_name
         else:
             services.append(key)
     for namespace, namespace_service_names in namespace_map.items():
-        namespaces[namespace] = Namespace(
-            namespace, namespace_service_names, provider, parent=parent_namespace
-        )
+        namespaces[namespace] = Namespace(namespace, namespace_service_names, provider, parent=parent_namespace)
 
     return services, namespaces
 
 
 class Namespace:
-
     def __init__(self, name, services_names, provider, parent=None):
         self.name = name
         self.parent = parent
         self.provider = provider
 
-        services, namespaces = get_services_and_namespaces(
-            services_names, provider, parent_namespace=self
-        )
+        services, namespaces = get_services_and_namespaces(services_names, provider, parent_namespace=self)
         self._service_names = services
         self._namespaces = namespaces
 
@@ -103,7 +91,7 @@ class Namespace:
     def get(self, name, **kwargs):
         return self.provider.get(f"{self.path}.{name}", **kwargs)
 
-    def set(self, name: str, service: any):
+    def set(self, name: str, service: typing.Any):
         return self.provider.set(f"{self.path}.{name}", service)
 
     @property
@@ -116,40 +104,39 @@ class Namespace:
 
 
 class ServiceProvider:
-
     name = None
 
     UNKNOWN_SERVICE_ERRMSG = '"{}" is not a service we know of.'
-    TOO_MANY_CREATION_METHODS_ERRMSG = 'You must define either a class, an instance, ' \
-                                       'or a factory for the service "{}", not both.'
-    NO_CREATION_METHOD_ERRMSG = 'You must define either a class, an instance, or ' \
-                                'a factory for the service "{}", none was found.'
-    NOT_A_SERVICE_FACTORY_ERRMSG = 'The factory class for the service ' \
-                                   '"{}" does not have a "build" method.'
+    TOO_MANY_CREATION_METHODS_ERRMSG = (
+        'You must define either a class, an instance, or a factory for the service "{}", not both.'
+    )
+    NO_CREATION_METHOD_ERRMSG = (
+        'You must define either a class, an instance, or a factory for the service "{}", none was found.'
+    )
+    NOT_A_SERVICE_FACTORY_ERRMSG = 'The factory class for the service "{}" does not have a "build" method.'
     BAD_CONF_PATH_ERRMSG = 'The path "{}" was not found in the app configuration.'
 
-    _service_meths = {
-        'instance': '_get_service_instance',
-        'class': '_instance_service_with_class',
-        'factory': '_instance_service_with_factory'
+    _service_meths: typing.ClassVar[typing.Dict[str, str]] = {
+        "instance": "_get_service_instance",
+        "class": "_instance_service_with_class",
+        "factory": "_instance_service_with_factory",
     }
 
-
-    def __init__(self, *providers, name: str = None):
+    def __init__(self, *providers, name: typing.Optional[str] = None):
         self.name = name
         self._providers = providers
         self.importer = Importer()  # Can't inject it, obviously.
-        self.service_conf = {}
-        self.app_conf = {}
-        self.service_instances = {}
-        self.service_classes = {}
-        self.factory_classes = {}
-        self._namespaces = {}
-        self._service_names = []
+        self.service_conf: dict = {}
+        self.app_conf: dict = {}
+        self.service_instances: dict = {}
+        self.service_classes: dict = {}
+        self.factory_classes: dict = {}
+        self._namespaces: dict = {}
+        self._service_names: list = []
         self._local = Local()
 
     def _init_local(self):
-        if not hasattr(self._local, 'set_services'):
+        if not hasattr(self._local, "set_services"):
             self._local.set_services = {}
             self._local.service_instances = {}
             self._local.service_classes = {}
@@ -161,7 +148,7 @@ class ServiceProvider:
         for p in self._providers:
             p.reset()
 
-    def conf(self, service_conf: dict, app_conf: dict = None):
+    def conf(self, service_conf: dict, app_conf: typing.Optional[dict] = None):
         if app_conf is None:
             app_conf = {}
 
@@ -248,7 +235,7 @@ class ServiceProvider:
         else:
             raise NoCreationMethodError(self.NO_CREATION_METHOD_ERRMSG.format(name))
 
-    def set(self, name: str, service: any):
+    def set(self, name: str, service: typing.Any):
         self._init_local()
 
         if name not in self.service_conf:
@@ -260,25 +247,25 @@ class ServiceProvider:
         if not self.service_conf[name]:
             raise NoCreationMethodError(self.NO_CREATION_METHOD_ERRMSG.format(name))
 
-        return 1 < len([k for k in self._service_meths.keys() if k in self.service_conf[name]])
+        return len([k for k in self._service_meths if k in self.service_conf[name]]) > 1
 
     def _get_service_instance(self, name: str):
         if name not in self._local.service_instances:
-            self._local.service_instances[name] = self.importer.get_obj(self.service_conf[name]['instance'])
+            self._local.service_instances[name] = self.importer.get_obj(self.service_conf[name]["instance"])
 
         return self._local.service_instances[name]
 
     def _instance_service_with_class(self, name: str, **kwargs):
         if name not in self._local.service_classes:
-            self._local.service_classes[name] = self.importer.get_obj(self.service_conf[name]['class'])
+            self._local.service_classes[name] = self.importer.get_obj(self.service_conf[name]["class"])
 
         return self._local.service_classes[name](*self._get_args(name), **self._get_kwargs(name, **kwargs))
 
     def _instance_service_with_factory(self, name: str, **kwargs):
         if name not in self._local.factory_classes:
-            factory_class = self.importer.get_obj(self.service_conf[name]['factory'])
+            factory_class = self.importer.get_obj(self.service_conf[name]["factory"])
 
-            if not hasattr(factory_class, 'build') or not callable(factory_class.build):
+            if not hasattr(factory_class, "build") or not callable(factory_class.build):
                 raise NotAServiceFactoryError(self.NOT_A_SERVICE_FACTORY_ERRMSG.format(name))
 
             self._local.factory_classes[name] = factory_class
@@ -286,43 +273,43 @@ class ServiceProvider:
         return self._local.factory_classes[name](*self._get_args(name), **self._get_kwargs(name, **kwargs)).build()
 
     def _get_args(self, name: str):
-        if 'arguments' in self.service_conf[name]:
-            return [self._get_arg(ref) for ref in self.service_conf[name]['arguments']]
+        if "arguments" in self.service_conf[name]:
+            return [self._get_arg(ref) for ref in self.service_conf[name]["arguments"]]
         else:
             return []
 
     def _get_kwargs(self, name: str, **kwargs):
         named_arguments = {}
 
-        for k, v in self.service_conf[name].get('named_arguments', {}).items():
-            named_arguments[k] = kwargs.get(k, None) or self._get_arg(v)
+        for k, v in self.service_conf[name].get("named_arguments", {}).items():
+            named_arguments[k] = kwargs.get(k) or self._get_arg(v)
 
         return named_arguments
 
-    def _get_arg(self, ref: any):
+    def _get_arg(self, ref: typing.Any):
         if isinstance(ref, str):
-            if '@' == ref[0]:
+            if ref[0] == "@":
                 return self._get_service(ref[1:])
-            elif '%' == ref[0] == ref[-1:]:
+            elif "%" == ref[0] == ref[-1:]:
                 return self._get_conf(ref[1:-1])
-            elif '$' == ref[0]:
+            elif ref[0] == "$":
                 return self._get_env(ref[1:])
-            elif '^' == ref[0]:
+            elif ref[0] == "^":
                 return self.importer.get_obj(ref[1:])
 
         elif isinstance(ref, list):
-            if '$' == ref[0][0]:
+            if ref[0][0] == "$":
                 return self._get_env(ref[0][1:], ref[1])
             else:
                 return [self._get_arg(i) for i in ref]
 
-        return ref # Literal
+        return ref  # Literal
 
     def _get_service(self, service_name: str):
         try:
             value = self.get(service_name)
-        
-        except UnknownServiceError as e:
+
+        except UnknownServiceError:
             # See if we are trying to access a service's attribute
             service_name, service_attr = service_name.rsplit(".", 1)
             if not service_attr:
@@ -334,11 +321,11 @@ class ServiceProvider:
         return value
 
     def _get_conf(self, path: str):
-        parts = path.split('.')
+        parts = path.split(".")
 
         try:
             trunk = self.app_conf[parts[0]]
-        except KeyError as e:
+        except KeyError:
             raise BadConfPathError(self.BAD_CONF_PATH_ERRMSG.format(parts[0]))
 
         try:
@@ -346,7 +333,7 @@ class ServiceProvider:
         except KeyError as e:
             raise BadConfPathError(self.BAD_CONF_PATH_ERRMSG.format(e.args[0]))
 
-    def _get_env(self, var: str, default: any = None):
+    def _get_env(self, var: str, default: typing.Optional[typing.Any] = None):
         default = self._get_arg(default)
         string = os.environ.get(var, default)
 
