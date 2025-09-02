@@ -85,7 +85,7 @@ def service_provider_from_sources(*sources: ServiceDefinitionSource, create_alt_
     for source in sources:
         if not isinstance(source, ServiceDefinitionSource):
             raise TypeError(f"source must be a {ServiceDefinitionSource.__name__} instance")
-        
+
         with open(source.path) as fp:
             service_conf = yaml.load(fp)
 
