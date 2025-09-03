@@ -1,10 +1,11 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
 
 [project]
 name = "pyrovider"
 description = "A service provider for Python inspired by Symfony 2 and Angular 2"
+version = "2.0.1"
 authors = [
     { name = "Javier Lorenzana", email = "skqr@protonmail.com" },
     { name = "Sebastián Packmann", email = "seba@shiphero.com" }
@@ -28,10 +29,6 @@ dependencies = [
  "python-dotenv",
  "werkzeug",
 ]
-dynamic = ["version"]
-
-[tool.setuptools.dynamic]
-version = {attr = "pyrovider.__version__"}
 
 [dependency-groups]
 dev = [
@@ -80,4 +77,4 @@ ignore = ["ISC001"]
 branch = true
 
 [tool.coverage.paths]
-source = ["pyrovider/"]
+source = ["src/pyrovider/"]
