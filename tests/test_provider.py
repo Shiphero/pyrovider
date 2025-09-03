@@ -3,7 +3,7 @@ import pathlib
 import unittest
 from unittest import mock
 
-import yaml
+from ruamel.yaml import YAML
 
 from pyrovider.services.provider import (
     BadConfPathError,
@@ -25,11 +25,12 @@ class ModelSchemataTest(unittest.TestCase):
 
     def setUp(self):
         # Given...
+        yaml = YAML(typ="safe")
         self.provider = ServiceProvider()
         with open(self.service_conf_path) as fp:
-            self.service_conf = yaml.safe_load(fp.read())
+            self.service_conf = yaml.load(fp)
         with open(self.app_conf_path) as fp:
-            self.app_conf = yaml.safe_load(fp.read())
+            self.app_conf = yaml.load(fp)
         self.provider.conf(self.service_conf, self.app_conf)
 
     def test_getting_an_instance_service(self):

@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-import yaml
+from ruamel.yaml import YAML
 
 from pyrovider.services.provider import ServiceProvider
 
@@ -14,8 +14,9 @@ class NamespaceTest(unittest.TestCase):
     def setUp(self):
         # Given...
         self.provider = ServiceProvider()
+        yaml = YAML(typ="safe")
         with open(self.service_conf_path) as fp:
-            self.service_conf = yaml.safe_load(fp.read())
+            self.service_conf = yaml.load(fp)
 
         self.provider.conf(self.service_conf)
 

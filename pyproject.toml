@@ -24,7 +24,7 @@ classifiers = [
 ]
 keywords = ["service", "provider", "python"]
 dependencies = [
- "pyyaml",
+ "ruamel.yaml",
  "python-dotenv",
  "werkzeug",
 ]

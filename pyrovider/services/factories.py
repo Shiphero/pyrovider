@@ -1,7 +1,7 @@
 import typing
 from pathlib import Path
 
-import yaml
+from ruamel.yaml import YAML
 
 from .provider import ServiceProvider
 
@@ -41,13 +41,14 @@ def service_provider_from_yaml(
             the configuration files.
     """
     provider = ServiceProvider(*providers, name=name)
+    yaml = YAML(typ="safe")
 
     with open(service_conf_path) as fp:
-        service_conf = yaml.full_load(fp.read())
+        service_conf = yaml.load(fp)
 
     if app_conf_path is not None:
         with open(app_conf_path) as fp:
-            app_conf = yaml.full_load(fp.read())
+            app_conf = yaml.load(fp)
     else:
         app_conf = None
 
@@ -79,13 +80,14 @@ def service_provider_from_sources(*sources: ServiceDefinitionSource, create_alt_
 
     merged_conf = {}
     errors = []
+    yaml = YAML(typ="safe")
 
     for source in sources:
         if not isinstance(source, ServiceDefinitionSource):
             raise TypeError(f"source must be a {ServiceDefinitionSource.__name__} instance")
 
         with open(source.path) as fp:
-            service_conf = yaml.full_load(fp.read())
+            service_conf = yaml.load(fp)
 
             for key, value in service_conf.items():
                 service_key = f"{source.name}.{key}" if source.as_namespace else key
