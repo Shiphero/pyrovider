@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pyrovider"
 description = "A service provider for Python inspired by Symfony 2 and Angular 2"
+version = "2.0.1"
 authors = [
     { name = "Javier Lorenzana", email = "skqr@protonmail.com" },
     { name = "Sebastián Packmann", email = "seba@shiphero.com" }
@@ -28,10 +29,6 @@ dependencies = [
  "python-dotenv",
  "werkzeug",
 ]
-dynamic = ["version"]
-
-[tool.setuptools.dynamic]
-version = {attr = "pyrovider.__version__"}
 
 [dependency-groups]
 dev = [

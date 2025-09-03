@@ -530,6 +530,7 @@ wheels = [
 
 [[package]]
 name = "pyrovider"
+version = "2.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "python-dotenv", version = "1.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
