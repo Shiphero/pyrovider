@@ -1,7 +1,7 @@
 import typing
 from pathlib import Path
 
-from ruamel.yaml import YAML
+from ruamel.yaml import YAML  # type: ignore[import-untyped]
 
 from .provider import ServiceProvider
 
