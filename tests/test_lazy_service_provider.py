@@ -33,9 +33,9 @@ def test_split_service_definitions_and_load_each_service_on_first_use(tmp_path):
 
     assert config.provider_name == "lazy-provider"
     assert set(config.keys()) == {"__name__", "entity.hello_world", "entity.another_class"}
-    assert config._definitions == {}
+    assert config.loaded_service_names == set()
     assert config["entity.hello_world"]["class"].endswith("Salutation")
-    assert set(config._definitions) == {"entity.hello_world"}
+    assert config.loaded_service_names == {"entity.hello_world"}
 
 
 def test_lazy_provider_preserves_references_and_namespaces(tmp_path):

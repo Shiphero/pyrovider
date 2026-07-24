@@ -31,6 +31,12 @@ class LazyServiceConfig(Mapping):
         self._lock = Lock()
         self._yaml = YAML(typ="safe")
 
+    @property
+    def loaded_service_names(self):
+        """Return service definitions parsed in this process."""
+
+        return frozenset(self._definitions)
+
     def __getitem__(self, name):
         if name == "__name__" and self.provider_name is not None:
             return self.provider_name

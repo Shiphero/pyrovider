@@ -5,7 +5,7 @@ build-backend = "uv_build"
 [project]
 name = "pyrovider"
 description = "A service provider for Python inspired by Symfony 2 and Angular 2"
-version = "2.0.1"
+version = "2.1.0"
 authors = [
     { name = "Javier Lorenzana", email = "skqr@protonmail.com" },
     { name = "Sebastián Packmann", email = "seba@shiphero.com" }
