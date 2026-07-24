@@ -116,7 +116,7 @@ class ServiceProvider:
     NOT_A_SERVICE_FACTORY_ERRMSG = 'The factory class for the service "{}" does not have a "build" method.'
     BAD_CONF_PATH_ERRMSG = 'The path "{}" was not found in the app configuration.'
 
-    _service_meths: typing.ClassVar[typing.Dict[str, str]] = {
+    _service_meths: typing.ClassVar[dict[str, str]] = {
         "instance": "_get_service_instance",
         "class": "_instance_service_with_class",
         "factory": "_instance_service_with_factory",
@@ -126,7 +126,7 @@ class ServiceProvider:
         self.name = name
         self._providers = providers
         self.importer = Importer()  # Can't inject it, obviously.
-        self.service_conf: dict = {}
+        self.service_conf: typing.Mapping = {}
         self.app_conf: dict = {}
         self.service_instances: dict = {}
         self.service_classes: dict = {}
@@ -148,7 +148,7 @@ class ServiceProvider:
         for p in self._providers:
             p.reset()
 
-    def conf(self, service_conf: dict, app_conf: typing.Optional[dict] = None):
+    def conf(self, service_conf: typing.Mapping, app_conf: typing.Optional[dict] = None):
         if app_conf is None:
             app_conf = {}
 
