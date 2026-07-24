@@ -126,7 +126,7 @@ class ServiceProvider:
         self.name = name
         self._providers = providers
         self.importer = Importer()  # Can't inject it, obviously.
-        self.service_conf: dict = {}
+        self.service_conf: typing.Mapping = {}
         self.app_conf: dict = {}
         self.service_instances: dict = {}
         self.service_classes: dict = {}
@@ -148,7 +148,7 @@ class ServiceProvider:
         for p in self._providers:
             p.reset()
 
-    def conf(self, service_conf: dict, app_conf: typing.Optional[dict] = None):
+    def conf(self, service_conf: typing.Mapping, app_conf: typing.Optional[dict] = None):
         if app_conf is None:
             app_conf = {}
 

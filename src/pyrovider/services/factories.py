@@ -1,9 +1,112 @@
+import hashlib
+import json
+import re
 import typing
+from collections.abc import Iterator, Mapping
 from pathlib import Path
+from threading import Lock
 
 from ruamel.yaml import YAML  # type: ignore[import-untyped]
 
 from .provider import ServiceProvider
+
+MANIFEST_FILENAME = "manifest.json"
+MANIFEST_FORMAT_VERSION = 1
+_SAFE_SERVICE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
+_MAX_SERVICE_FILENAME_LENGTH = 120
+
+
+class LazyServiceConfig(Mapping):
+    """Read service definitions from individual YAML files on first access."""
+
+    def __init__(self, directory: typing.Union[str, Path]):
+        self.directory = Path(directory)
+        with (self.directory / MANIFEST_FILENAME).open() as fp:
+            manifest = json.load(fp)
+        if manifest.get("format") != MANIFEST_FORMAT_VERSION:
+            raise ValueError("Unsupported lazy service manifest format")
+        self.provider_name = manifest.get("provider_name")
+        self._service_files = manifest["services"]
+        self._definitions: typing.Dict[str, typing.Any] = {}
+        self._lock = Lock()
+        self._yaml = YAML(typ="safe")
+
+    def __getitem__(self, name):
+        if name == "__name__" and self.provider_name is not None:
+            return self.provider_name
+        if name not in self._service_files:
+            raise KeyError(name)
+        if name not in self._definitions:
+            with self._lock:
+                if name not in self._definitions:
+                    with (self.directory / self._service_files[name]).open() as fp:
+                        self._definitions[name] = self._yaml.load(fp)
+        return self._definitions[name]
+
+    def __iter__(self) -> Iterator[str]:
+        if self.provider_name is not None:
+            yield "__name__"
+        yield from self._service_files
+
+    def __len__(self):
+        return len(self._service_files) + (self.provider_name is not None)
+
+
+def service_provider_from_directory(
+    service_conf_directory: typing.Union[str, Path],
+    *providers,
+    app_conf_path: typing.Union[str, Path, None] = None,
+    name: typing.Optional[str] = None,
+) -> ServiceProvider:
+    """Build a provider whose service definitions load lazily from a directory."""
+
+    provider = ServiceProvider(*providers, name=name)
+    service_conf = LazyServiceConfig(service_conf_directory)
+    app_conf = _load_yaml(app_conf_path) if app_conf_path is not None else None
+    provider.conf(service_conf, app_conf)
+    return provider
+
+
+def split_service_definitions(
+    service_conf_path: typing.Union[str, Path], output_directory: typing.Union[str, Path]
+) -> Path:
+    """Split one provider YAML into a manifest and one YAML file per service."""
+
+    service_conf = _load_yaml(service_conf_path)
+    output_path = Path(output_directory)
+    output_path.mkdir(parents=True, exist_ok=True)
+    yaml = YAML(typ="safe")
+    services = {}
+    for service_name, definition in service_conf.items():
+        if service_name == "__name__":
+            continue
+        filename = _service_definition_filename(service_name)
+        with (output_path / filename).open("w") as fp:
+            yaml.dump(definition, fp)
+        services[service_name] = filename
+    manifest = {
+        "format": MANIFEST_FORMAT_VERSION,
+        "provider_name": service_conf.get("__name__"),
+        "services": services,
+    }
+    manifest_path = output_path / MANIFEST_FILENAME
+    with manifest_path.open("w") as fp:
+        json.dump(manifest, fp, indent=2, sort_keys=True)
+        fp.write("\n")
+    return manifest_path
+
+
+def _service_definition_filename(service_name: str) -> str:
+    filename = f"{service_name}.yaml"
+    if _SAFE_SERVICE_NAME.fullmatch(service_name) and len(filename) <= _MAX_SERVICE_FILENAME_LENGTH:
+        return filename
+    return f"{hashlib.sha256(service_name.encode()).hexdigest()}.yaml"
+
+
+def _load_yaml(path: typing.Union[str, Path]):
+    yaml = YAML(typ="safe")
+    with open(path) as fp:
+        return yaml.load(fp)
 
 
 def service_provider_from_yaml(
@@ -41,16 +144,9 @@ def service_provider_from_yaml(
             the configuration files.
     """
     provider = ServiceProvider(*providers, name=name)
-    yaml = YAML(typ="safe")
+    service_conf = _load_yaml(service_conf_path)
 
-    with open(service_conf_path) as fp:
-        service_conf = yaml.load(fp)
-
-    if app_conf_path is not None:
-        with open(app_conf_path) as fp:
-            app_conf = yaml.load(fp)
-    else:
-        app_conf = None
+    app_conf = _load_yaml(app_conf_path) if app_conf_path is not None else None
 
     provider.conf(service_conf, app_conf)
 
