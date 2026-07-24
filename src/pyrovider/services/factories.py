@@ -27,7 +27,7 @@ class LazyServiceConfig(Mapping):
             raise ValueError("Unsupported lazy service manifest format")
         self.provider_name = manifest.get("provider_name")
         self._service_files = manifest["services"]
-        self._definitions: typing.Dict[str, typing.Any] = {}
+        self._definitions: dict[str, typing.Any] = {}
         self._lock = Lock()
         self._yaml = YAML(typ="safe")
 

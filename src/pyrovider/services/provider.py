@@ -116,7 +116,7 @@ class ServiceProvider:
     NOT_A_SERVICE_FACTORY_ERRMSG = 'The factory class for the service "{}" does not have a "build" method.'
     BAD_CONF_PATH_ERRMSG = 'The path "{}" was not found in the app configuration.'
 
-    _service_meths: typing.ClassVar[typing.Dict[str, str]] = {
+    _service_meths: typing.ClassVar[dict[str, str]] = {
         "instance": "_get_service_instance",
         "class": "_instance_service_with_class",
         "factory": "_instance_service_with_factory",
