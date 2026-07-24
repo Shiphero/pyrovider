@@ -65,3 +65,19 @@ def test_split_uses_hash_for_unsafe_service_names(tmp_path):
     assert "/" not in filename
     assert len(filename) == 69
     assert (output / filename).exists()
+
+
+def test_split_removes_files_from_previous_manifest(tmp_path):
+    source = tmp_path / "services.yaml"
+    output = tmp_path / "services.d"
+    source.write_text("old:\n  instance: tests.test_service_provider_from_yaml.echo\n")
+    split_service_definitions(source, output)
+    unrelated = output / "keep.txt"
+    unrelated.write_text("keep")
+
+    source.write_text("new:\n  instance: tests.test_service_provider_from_yaml.echo\n")
+    split_service_definitions(source, output)
+
+    assert not (output / "old.yaml").exists()
+    assert (output / "new.yaml").exists()
+    assert unrelated.exists()

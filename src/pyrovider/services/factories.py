@@ -81,6 +81,7 @@ def split_service_definitions(
     service_conf = _load_yaml(service_conf_path)
     output_path = Path(output_directory)
     output_path.mkdir(parents=True, exist_ok=True)
+    _remove_previous_service_files(output_path)
     yaml = YAML(typ="safe")
     services = {}
     for service_name, definition in service_conf.items():
@@ -100,6 +101,18 @@ def split_service_definitions(
         json.dump(manifest, fp, indent=2, sort_keys=True)
         fp.write("\n")
     return manifest_path
+
+
+def _remove_previous_service_files(output_path: Path) -> None:
+    manifest_path = output_path / MANIFEST_FILENAME
+    if not manifest_path.exists():
+        return
+    with manifest_path.open() as fp:
+        previous_manifest = json.load(fp)
+    for filename in previous_manifest.get("services", {}).values():
+        service_path = output_path / filename
+        if service_path.is_file():
+            service_path.unlink()
 
 
 def _service_definition_filename(service_name: str) -> str:
